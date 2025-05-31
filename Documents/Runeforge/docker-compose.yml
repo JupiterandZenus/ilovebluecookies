@@ -1,0 +1,19 @@
+version: "3.8"
+services:
+  runeforge:
+    build: .
+    container_name: runeforge
+    ports:
+      - "5901:5900"     # VNC port inside container mapped to 5901 host
+      - "6081:6081"     # noVNC port
+      - "6079:6079"     # Flask web panel
+      - "5000:5000"     # Flask web panel alternate port (if needed)
+    volumes:
+      - ./accounts.txt:/app/accounts.txt
+      - ./account_manager.sh:/app/account_manager.sh
+      - ./cpu_manager.sh:/app/cpu_manager.sh
+      - ./start.sh:/app/start.sh
+    environment:
+      - HOST=0.0.0.0
+      - PORT=5000
+    command: /app/start.sh
