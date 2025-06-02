@@ -1,0 +1,112 @@
+version: '3.8'
+
+services:
+  farm-admin:
+    container_name: farm-admin
+    build:
+      context: https://swarnes1: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@github.com/swarnes1/farm-admin.git
+      dockerfile: Dockerfile
+      build_timestamp: $REBUILD_TIMESTAMP
+    ports:
+      - "3333:3000"  # Farm Manager web interface
+      - "5900:5900"  # VNC for remote desktop access
+      - "8080:8080"  # noVNC web interface
+      - "2222:22"    # SSH access
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=mysql://farmboy:Sntioi004!@mariadb:3306/farmboy_db
+      - API_KEY=RZbfSKKe3qCtHVk0ty3H41yJc403rMNzdj73v7ar6Owp5kfQjuLiyaRrOsoe81N5 # Farm Manager's own API key
+      - ETERNALFARM_AGENT_KEY=P52FE7-I2G19W-C2S4R8-BQZZFP-1FADWV-V3 # Key for https://api.eternalfarm.net
+      - AUTH_AGENT_KEY=P52FE7-I2G19W-C2S4R8-BQZZFP-1FADWV-V3 # EternalFarm Agent auth key
+      - ETERNAL_API_URL=https://api.eternalfarm.net # Central EternalFarm API
+      - ETERNAL_FARM_KEY=${ETERNAL_FARM_KEY:-} # EternalFarm Checker tool key
+      - ETERNAL_AUTH_KEY=${ETERNAL_AUTH_KEY:-} # EternalFarm Browser Automator key
+      - PORT=3000
+      - DISPLAY=:1
+      - DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/1358933950210379816/Pdfyxcilip-xI3-q5ILOl9eRCl0nhEICZHZuvbyQm9aARgzI7GuHQExqBj1NNfkScPvV
+    labels:
+      - "io.portainer.accesscontrol.teams=administrators"
+      - "io.portainer.accesscontrol.users=admin"
+      - "com.docker.compose.service=farm-admin"
+      - "traefik.enable=false"
+      # Environment variable labels for Portainer UI
+      - "io.portainer.environment.NODE_ENV=production"
+      - "io.portainer.environment.NODE_ENV.description=Application environment (development/production)"
+      - "io.portainer.environment.DATABASE_URL=mysql://farmboy:Sntioi004!@mariadb:3306/farmboy_db"
+      - "io.portainer.environment.DATABASE_URL.description=Database connection string for MariaDB"
+      - "io.portainer.environment.API_KEY=RZbfSKKe3qCtHVk0ty3H41yJc403rMNzdj73v7ar6Owp5kfQjuLiyaRrOsoe81N5"
+      - "io.portainer.environment.API_KEY.description=Farm Manager API authentication key"
+      - "io.portainer.environment.ETERNALFARM_AGENT_KEY=P52FE7-I2G19W-C2S4R8-BQZZFP-1FADWV-V3"
+      - "io.portainer.environment.ETERNALFARM_AGENT_KEY.description=EternalFarm API authentication key"
+      - "io.portainer.environment.ETERNAL_API_URL=https://api.eternalfarm.net"
+      - "io.portainer.environment.ETERNAL_API_URL.description=EternalFarm API server URL (central)"
+      - "io.portainer.environment.ETERNAL_FARM_KEY="
+      - "io.portainer.environment.ETERNAL_FARM_KEY.description=EternalFarm Checker tool authentication key"
+      - "io.portainer.environment.ETERNAL_AUTH_KEY="
+      - "io.portainer.environment.ETERNAL_AUTH_KEY.description=EternalFarm Browser Automator authentication key"
+      - "io.portainer.environment.PORT=3000"
+      - "io.portainer.environment.PORT.description=Internal server port (default: 3000)"
+      - "io.portainer.environment.DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/1358933950210379816/Pdfyxcilip-xI3-q5ILOl9eRCl0nhEICZHZuvbyQm9aARgzI7GuHQExqBj1NNfkScPvV"
+      - "io.portainer.environment.DISCORD_WEBHOOK_URL.description=Discord webhook URL for notifications"
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    networks:
+      - farm-admin-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 180s
+
+  mariadb:
+    container_name: farm-admin-mariadb
+    image: lscr.io/linuxserver/mariadb:latest
+    environment:
+      - PUID=99
+      - PGID=100
+      - UMASK=022
+      - MYSQL_ROOT_PASSWORD=Sntioi004!
+      - MYSQL_DATABASE=farmboy_db
+      - MYSQL_USER=farmboy
+      - MYSQL_PASSWORD=Sntioi004!
+    volumes:
+      - mariadb_config:/config
+    networks:
+      - farm-admin-network
+    ports:
+      - "3307:3306"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pSntioi004!"]
+      interval: 30s
+      timeout: 15s
+      retries: 15
+      start_period: 180s
+    labels:
+      - "io.portainer.accesscontrol.teams=administrators"
+      - "io.portainer.accesscontrol.users=admin"
+      - "com.docker.compose.service=mariadb"
+      - "traefik.enable=false"
+      # Database configuration labels
+      - "io.portainer.database.type=MariaDB"
+      - "io.portainer.database.version=latest"
+      - "io.portainer.database.port=3306"
+
+volumes:
+  mariadb_config:
+    driver: local
+    labels:
+      - "io.portainer.accesscontrol.teams=administrators"
+      - "io.portainer.volume.type=config"
+      - "io.portainer.volume.service=mariadb"
+
+networks:
+  farm-admin-network:
+    driver: bridge
+    labels:
+      - "io.portainer.accesscontrol.teams=administrators"
+      - "io.portainer.network.type=internal"
+      - "io.portainer.network.service=farm-admin" 
